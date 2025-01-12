@@ -2,7 +2,9 @@ import os
 import random
 import numpy as np
 import torch
-from idna.idnadata import scripts
+from tqdm import tqdm
+
+from script.import_data_with_images import import_dataset_image
 
 import get_main  # PyTorch implementation of get_main
 import import_data as impt  # PyTorch-compatible data import functions
@@ -100,7 +102,7 @@ elif data_mode == 'METABRIC':
     x_dim, DATA, MASK = impt.import_dataset_METABRIC(norm_mode='standard')
     EVAL_TIMES = [144, 288, 432]  # Example evaluation times
 elif data_mode == 'IMAGE':
-    x_dim, DATA, MASK = scripts.import_dataset_image(norm_mode='standard')
+    x_dim, DATA, MASK = import_dataset_image(norm_mode='standard')
     EVAL_TIMES = [144, 288, 432]
 else:
     raise ValueError('ERROR: DATA_MODE NOT FOUND !!!')
@@ -113,7 +115,7 @@ mask1, mask2 = MASK
 out_path = os.path.join(data_mode, 'results')
 
 ##### RANDOM SEARCH ACROSS MULTIPLE OUTER ITERATIONS #####
-for itr in range(OUT_ITERATION):
+for itr in tqdm(range(OUT_ITERATION), desc="Outer Iterations", position=0, leave=True, total=OUT_ITERATION):
     #set_seeds(itr)  # Ensure reproducibility by setting seed at each outer iteration
     itr_dir = os.path.join(out_path, f'itr_{itr}')
     
@@ -123,7 +125,7 @@ for itr in range(OUT_ITERATION):
     max_valid = 0.0
     log_name = os.path.join(itr_dir, 'hyperparameters_log.txt')
 
-    for r_itr in range(RS_ITERATION):
+    for r_itr in tqdm(range(RS_ITERATION), desc="Random Search Iterations", position=1, leave=False, total=RS_ITERATION):
         print(f'OUTER_ITERATION: {itr}')
         print(f'Random search... iteration: {r_itr}')
         set_seeds(itr * 10 + r_itr)  # Ensure reproducibility by setting seed at each random search iteration

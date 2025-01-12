@@ -12,6 +12,8 @@ from models.resnet50 import ResNet50
 from torchvision import transforms
 from PIL import Image
 import torch
+from tqdm import tqdm
+tqdm.pandas()  # Enable the progress bar for pandas apply
 
 # 初始化模型
 
@@ -34,18 +36,25 @@ def extract_image_features(img_path):
     return features.numpy()
 
 def import_dataset_image(norm_mode='standard'):
-    in_filename = '../sample data/img_data/mock_training_data.csv'
+    in_filename = './sample data/img_data/mock_training_data.csv'
     df = pd.read_csv(in_filename, sep=',')
 
     # Extract image features and replace the previous data columns
-    df['image_features'] = df['img_path'].apply(extract_image_features)
+    print("Extracting image features...")
+    df['image_features'] = df['img_path'].progress_apply(extract_image_features)
 
     # Convert image features to a proper numpy array format
     data = np.vstack(df['image_features'].values)
 
+    final_data = pd.concat([df[['event_time', 'label']], pd.DataFrame(data)], axis=1)
+    final_data.columns = ['event_time', 'label'] + [f'feature_{i}' for i in range(data.shape[1])]
+    final_data.to_csv('./sample data/img_data/mock_training_data_features.csv', index=False)
+
     label = np.asarray(df[['label']])
     time = np.asarray(df[['event_time']])
     data = f_get_Normalization(data, norm_mode)
+
+
 
     num_Category = int(np.max(time) * 1.2)
     num_Event = int(len(np.unique(label)) - 1)
