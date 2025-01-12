@@ -2,6 +2,8 @@ import os
 import random
 import numpy as np
 import torch
+from idna.idnadata import scripts
+
 import get_main  # PyTorch implementation of get_main
 import import_data as impt  # PyTorch-compatible data import functions
 
@@ -77,9 +79,9 @@ def get_random_hyperparameters(out_path):
 
 ##### MAIN RANDOM SEARCH SETUP #####
 OUT_ITERATION = 5  # Number of outer iterations (splits)
-RS_ITERATION = 50  # Number of random search iterations
+RS_ITERATION = 10  # Number of random search iterations
 
-data_mode = 'METABRIC'
+data_mode = 'IMAGE'
 seed = 1234
 
 ##### IMPORT DATASET #####
@@ -97,6 +99,9 @@ if data_mode == 'SYNTHETIC':
 elif data_mode == 'METABRIC':
     x_dim, DATA, MASK = impt.import_dataset_METABRIC(norm_mode='standard')
     EVAL_TIMES = [144, 288, 432]  # Example evaluation times
+elif data_mode == 'IMAGE':
+    x_dim, DATA, MASK = scripts.import_dataset_image(norm_mode='standard')
+    EVAL_TIMES = [144, 288, 432]
 else:
     raise ValueError('ERROR: DATA_MODE NOT FOUND !!!')
 
