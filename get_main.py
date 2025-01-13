@@ -85,7 +85,8 @@ def get_valid_performance(DATA, MASK, in_parser, out_itr, eval_time=None, MAX_VA
     print(file_path_final + ' (a:' + str(alpha) + ' b:' + str(beta) + ')')
 
     ##### CREATE DEEPHIT NETWORK
-    model = Model_DeepHit(input_dims, network_settings)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = Model_DeepHit(input_dims, network_settings).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr_train)
     ### TRAINING-TESTING SPLIT
     (tr_data, te_data, tr_time, te_time, tr_label, te_label, 
@@ -97,7 +98,7 @@ def get_valid_performance(DATA, MASK, in_parser, out_itr, eval_time=None, MAX_VA
         tr_data, tr_time, tr_label, tr_mask1, tr_mask2, test_size=0.20, random_state=seed)
 
     # Convert va_data to a tensor
-    va_data = torch.tensor(va_data, dtype=torch.float32)  # ensure the data is a PyTorch tensor
+    va_data = torch.tensor(va_data, dtype=torch.float32).to(device)  # ensure the data is a PyTorch tensor
 
     max_valid = -99
     stop_flag = 0
@@ -142,7 +143,7 @@ def get_valid_performance(DATA, MASK, in_parser, out_itr, eval_time=None, MAX_VA
                     print('ERROR: evaluation horizon is out of range')
                     va_result1[:, t] = -1
                 else:
-                    risk = torch.sum(pred[:, :, :(eval_horizon + 1)], dim=2).numpy()  # risk score until eval_time
+                    risk = torch.sum(pred[:, :, :(eval_horizon + 1)], dim=2).cpu().numpy()  # risk score until eval_time
                     for k in range(num_Event):
                         va_result1[k, t] = weighted_c_index(
                             tr_time, (tr_label[:, 0] == k + 1).astype(int),

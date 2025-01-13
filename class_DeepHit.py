@@ -47,10 +47,13 @@ class Model_DeepHit(nn.Module):
         self.reg_W = 1e-4  # L2 regularization for all layers except output
         self.reg_W_out = 1e-4  # L1 regularization for output layer only
 
+        # Initialize the device
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         # Build shared and cause-specific subnetworks
-        self.shared_layers = self.build_shared_layers()
-        self.cause_specific_layers = self.build_cause_specific_layers()
-        self.output_layer = self.build_output_layer()
+        self.shared_layers = self.build_shared_layers().to(self.device)
+        self.cause_specific_layers = self.build_cause_specific_layers().to(self.device)
+        self.output_layer = self.build_output_layer().to(self.device)
 
         # Apply weight initialization
         self.initialize_weights()
@@ -99,6 +102,8 @@ class Model_DeepHit(nn.Module):
 
     def forward(self, x):
         # Forward pass through shared layers
+        x = x.to(self.device)
+
         for layer in self.shared_layers:
             x = self.active_fn(layer(x))
 
@@ -181,8 +186,8 @@ class Model_DeepHit(nn.Module):
         return torch.sum(eta_calibration)
 
     def compute_loss(self, DATA, MASK, PARAMETERS, predictions):
-        x_mb, k_mb, t_mb = DATA
-        m1_mb, m2_mb = MASK
+        x_mb, k_mb, t_mb = [tensor.to(self.device) for tensor in DATA]
+        m1_mb, m2_mb = [tensor.to(self.device) for tensor in MASK]
         alpha, beta, gamma = PARAMETERS
 
         # Compute the primary loss terms
@@ -218,8 +223,8 @@ class Model_DeepHit(nn.Module):
         return total_loss
     
     def training_step(self, DATA, MASK, PARAMETERS, optimizer):
-        x_mb, k_mb, t_mb = DATA
-        m1_mb, m2_mb = MASK
+        x_mb, k_mb, t_mb = [tensor.to(self.device) for tensor in DATA]
+        m1_mb, m2_mb = [tensor.to(self.device) for tensor in MASK]
 
         # Zero gradients
         optimizer.zero_grad()
@@ -239,5 +244,6 @@ class Model_DeepHit(nn.Module):
     def predict(self, x_test):
         self.eval()  # Set the model to evaluation mode (disables dropout, etc.)
         with torch.no_grad():  # Disable gradient computation during inference
+            x_test = x_test.to(self.device)
             return self.forward(x_test)
         
